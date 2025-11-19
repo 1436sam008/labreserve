@@ -1072,6 +1072,113 @@ document.getElementById('btnSaveCloud').onclick = async function() {
     alert('Save failed: ' + (e.message||e));
   }
 };
+/* ===== Auth modal (SIGN IN ONLY) =====
+   Replace any previous auth modal / btnAuth handler with this.
+   Paste after initFirebaseIfPossible();
+*/
+
+function createSignInModal() {
+  // If modal exists, show it
+  if (document.getElementById('authModal')) {
+    document.getElementById('authModal').style.display = 'flex';
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'authModal';
+  modal.className = 'modal-backdrop';
+  modal.style.zIndex = 10001;
+  modal.innerHTML = `
+    <div class="modal" style="width:420px;max-width:92%">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Sign in</h3>
+        <button id="authClose" class="btn ghost">Close</button>
+      </div>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:8px">
+          <button id="authGoogle" class="btn" style="flex:1">Sign in with Google</button>
+          <button id="authEmailToggle" class="btn ghost" style="flex:1">Email</button>
+        </div>
+
+        <div id="emailArea" style="display:none;flex-direction:column;gap:8px">
+          <input id="authEmail" placeholder="Email" style="padding:10px;border-radius:8px;border:1px solid #e6e9f0" />
+          <input id="authPass" placeholder="Password" type="password" style="padding:10px;border-radius:8px;border:1px solid #e6e9f0" />
+          <div style="display:flex;gap:8px">
+            <button id="emailSignIn" class="btn" style="flex:1">Sign in</button>
+            <button id="emailForgot" class="btn ghost" style="flex:1">Forgot?</button>
+          </div>
+          <div style="font-size:13px;color:var(--muted);margin-top:6px">Use the email/password account you created in Firebase Console.</div>
+        </div>
+
+        <div id="authMsg" style="font-size:13px;color:var(--muted)"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelector('#authClose').onclick = () => modal.remove();
+
+  // Google sign-in
+  modal.querySelector('#authGoogle').onclick = async () => {
+    if(!firebaseReady) return alert('Firebase not initialized');
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithPopup(provider);
+      modal.remove();
+    } catch(e) {
+      console.error('Google sign-in error', e);
+      modal.querySelector('#authMsg').textContent = 'Google sign-in failed: ' + (e.message||e);
+    }
+  };
+
+  // Toggle email area
+  const emailToggle = modal.querySelector('#authEmailToggle');
+  const emailArea = modal.querySelector('#emailArea');
+  emailToggle.onclick = () => {
+    emailArea.style.display = emailArea.style.display === 'flex' ? 'none' : 'flex';
+  };
+
+  // Email sign-in
+  modal.querySelector('#emailSignIn').onclick = async () => {
+    const em = modal.querySelector('#authEmail').value.trim();
+    const pw = modal.querySelector('#authPass').value;
+    if(!em || !pw) return alert('Enter email and password');
+    try {
+      await auth.signInWithEmailAndPassword(em, pw);
+      modal.remove();
+    } catch(e) {
+      console.error('Email sign-in error', e);
+      modal.querySelector('#authMsg').textContent = 'Sign-in failed: ' + (e.message||e);
+    }
+  };
+
+  // Forgot password helper (sends reset email)
+  modal.querySelector('#emailForgot').onclick = async () => {
+    const em = modal.querySelector('#authEmail').value.trim();
+    if(!em) return alert('Enter email to reset password');
+    try {
+      await auth.sendPasswordResetEmail(em);
+      modal.querySelector('#authMsg').textContent = 'Password reset email sent.';
+    } catch(e) {
+      console.error('Forgot password error', e);
+      modal.querySelector('#authMsg').textContent = 'Reset failed: ' + (e.message||e);
+    }
+  };
+}
+
+// Override auth button to open sign-in modal (and sign out if already signed in)
+document.getElementById('btnAuth').onclick = async function() {
+  if(!firebaseReady) {
+    initFirebaseIfPossible();
+    if(!firebaseReady) return alert('Firebase not initialized yet. Paste firebaseConfig and reload.');
+  }
+  if(currentUser) {
+    if(!confirm('Sign out?')) return;
+    try { await auth.signOut(); alert('Signed out'); } catch(e){ console.error(e); alert('Sign-out failed'); }
+    return;
+  }
+  createSignInModal();
+};
 
 // Load Cloud button
 document.getElementById('btnLoadCloud').onclick = async function() {
