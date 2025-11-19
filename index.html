@@ -211,6 +211,52 @@
   .topbar{ position:sticky; top:0; z-index:10003; }
 }
 
+     /* ===== MOBILE: overlay sidebar (replace previous mobile sidebar CSS) ===== */
+
+/* ensure hamburger visible on mobile */
+.mobile-menu-btn{ display:none; color:var(--text); background:transparent; border:none; font-size:22px; margin-right:10px; cursor:pointer; }
+
+/* backdrop */
+.sidebar-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:none; opacity:0; transition:opacity 200ms ease; }
+
+/* mobile behaviour */
+@media (max-width:980px){
+  .mobile-menu-btn{ display:block; }
+
+  /* overlay sidebar: slide in over the page */
+  .sidebar{
+    display:block !important;
+    position:fixed;
+    left:-78vw;           /* hidden off-screen initially */
+    top:0;
+    height:100vh;
+    width:78vw;           /* overlay width */
+    max-width:360px;
+    z-index:10002;        /* sits above backdrop */
+    transition: left 220ms cubic-bezier(.2,.9,.2,1);
+    box-shadow: 12px 0 36px rgba(2,6,23,0.35);
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--card);
+  }
+  .sidebar.open{ left:0; }
+
+  /* show backdrop when sidebar open */
+  .sidebar-backdrop.show{ display:block; opacity:1; }
+
+  /* show close X inside brand on mobile */
+  #sidebarClose{ display:block; color:var(--muted); }
+  .sidebar .nav button { color: var(--text); }
+
+  /* do not shift main content (overlay only) */
+  .main { transform: none !important; }
+
+  /* table tweaks */
+  table{ display:block; overflow-x:auto; white-space:nowrap; }
+  th, td{ padding:8px 6px; font-size:12px; }
+}
+
+
 
   </style>
 
@@ -222,13 +268,17 @@
 <body>
   <div class="app">
     <aside class="sidebar">
-      <div class="brand">
+      <div class="brand" style="position:relative; padding-right:36px;">
         <div class="logo">LR</div>
-        <div>
-          <h2>gurukul lab</h2>
-          <small style="color:#bfc7d6">Seat Reservation</small>
+          <div>
+            <h2>Lab Reserve</h2>
+            <small style="color:#bfc7d6">Seat Reservation</small>
+          </div>
+  <!-- close X shown only on mobile -->
+          <button id="sidebarClose" aria-label="Close menu" style="position:absolute; right:8px; top:8px; display:none; background:transparent; border:none; font-size:20px; cursor:pointer;">✕</button>
         </div>
-      </div>
+
+        </div>
       <nav class="nav" id="sidebarNav">
         <button class="active" data-view="dashboard">Dashboard</button>
         <button data-view="students">Student Profiles</button>
@@ -1107,6 +1157,78 @@ document.getElementById('menuBtn').onclick = () => {
     }
   });
 })();
+  // ===== Mobile overlay sidebar: toggle, close X, backdrop, auto-close =====
+(function(){
+  const menuBtn = document.getElementById('menuBtn');
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarCloseBtn = document.getElementById('sidebarClose');
+
+  if(!menuBtn || !sidebar) {
+    console.warn('Mobile sidebar: required elements missing');
+    return;
+  }
+
+  // ensure backdrop exists
+  let backdrop = document.querySelector('.sidebar-backdrop');
+  if(!backdrop){
+    backdrop = document.createElement('div');
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+    // prevent background scroll
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    // trap focus inside sidebar (basic)
+    setTimeout(()=> {
+      const firstBtn = sidebar.querySelector('button, a, input, [tabindex]');
+      if(firstBtn) firstBtn.focus();
+    }, 180);
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    // return focus to menuBtn
+    try { menuBtn.focus(); } catch(e){}
+  }
+
+  menuBtn.addEventListener('click', (e) => {
+    if(sidebar.classList.contains('open')) closeSidebar(); else openSidebar();
+  });
+
+  // close when clicking backdrop
+  backdrop.addEventListener('click', closeSidebar);
+
+  // close when clicking the top-right X
+  if(sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+
+  // close when clicking a nav button inside the sidebar (good for single-page nav)
+  sidebar.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-view]');
+    if(btn) {
+      // let the view switch happen then close
+      setTimeout(closeSidebar, 160);
+    }
+  });
+
+  // close on Escape key
+  document.addEventListener('keydown', (ev) => {
+    if(ev.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar();
+  });
+
+  // if viewport becomes desktop-size, ensure sidebar closed
+  window.addEventListener('resize', () => {
+    if(window.innerWidth > 980 && sidebar.classList.contains('open')) closeSidebar();
+  });
+})();
+
 
 
 
