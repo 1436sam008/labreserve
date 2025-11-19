@@ -58,6 +58,55 @@
     footer{margin-top:18px;color:var(--muted);font-size:13px}
     @media (max-width:980px){ .sidebar{display:none} .panel-left{grid-column:span 12} .panel-right{grid-column:span 12} .stats{flex-direction:column} .modal{width:92%} }
   </style>
+   <style>
+    /* Mobile top-left menu button */
+.mobile-menu-btn{
+  display:none;
+}
+
+@media (max-width:980px){
+  .mobile-menu-btn{
+    display:block;
+    background:transparent;
+    border:none;
+    font-size:22px;
+    margin-right:10px;
+    cursor:pointer;
+  }
+  .sidebar{
+    position:fixed;
+    left:-260px;
+    top:0;
+    height:100vh;
+    z-index:9999;
+    transition:0.3s;
+  }
+  .sidebar.open{
+    left:0;
+  }
+}
+@media (max-width:980px){
+  table{
+    display:block;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+  th, td{
+    padding:8px 6px;
+    font-size:12px;
+  }
+}
+@media (max-width:600px){
+  .actions{
+    flex-wrap:wrap;
+  }
+  .actions button{
+    flex:1;
+  }
+}
+
+
+  </style>
 
   <!-- Firebase (compat) scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -70,7 +119,7 @@
       <div class="brand">
         <div class="logo">LR</div>
         <div>
-          <h2>Lab Reserve</h2>
+          <h2>gurukul lab</h2>
           <small style="color:#bfc7d6">Seat Reservation</small>
         </div>
       </div>
@@ -86,6 +135,7 @@
 
     <main class="main">
       <div class="topbar">
+      <button class="mobile-menu-btn" id="menuBtn">☰</button>
         <div class="search">
           <input id="q" placeholder="Search students by name or mobile" />
           <div style="color:var(--muted);font-weight:600">|</div>
@@ -828,6 +878,11 @@ initFirebaseIfPossible();
    - onAuthStateChanged listener starts it automatically
    - if user is already signed in when page loads, it will start
    ============================ */
+  // Mobile sidebar toggle
+document.getElementById('menuBtn').onclick = () => {
+  document.querySelector('.sidebar').classList.toggle('open');
+};
+
 
 </script>
 </body>
