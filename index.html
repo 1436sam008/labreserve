@@ -105,6 +105,62 @@
   }
 }
 
+/* Mobile sidebar + backdrop */
+.mobile-menu-btn{
+  display:none;
+  background:transparent;
+  border:none;
+  font-size:22px;
+  margin-right:10px;
+  cursor:pointer;
+  color:var(--text);
+}
+
+/* backdrop that appears when sidebar open */
+.sidebar-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  z-index:9998;
+  display:none;
+  transition:opacity 220ms ease;
+}
+
+/* mobile behaviour */
+@media (max-width:980px){
+  .mobile-menu-btn{ display:block; }
+
+  /* Sidebar slides in from left */
+  .sidebar{
+    position:fixed;
+    left:-280px;           /* off screen */
+    top:0;
+    height:100vh;
+    width:260px;
+    z-index:9999;
+    transition: left 260ms cubic-bezier(.2,.9,.2,1);
+    box-shadow: 8px 0 24px rgba(2,6,23,0.25);
+  }
+  .sidebar.open{
+    left:0;
+  }
+
+  /* shift main content slightly (optional) */
+  .main.shifted {
+    transform: translateX(260px);
+    transition: transform 260ms cubic-bezier(.2,.9,.2,1);
+  }
+
+  /* show backdrop when sidebar open */
+  .sidebar-backdrop.show { display:block; opacity:1; }
+
+  /* table / small tweaks */
+  table{ display:block; overflow-x:auto; white-space:nowrap; }
+  th, td{ padding:8px 6px; font-size:12px; }
+
+  /* make topbar sticky so hamburger is always visible */
+  .topbar{ position:sticky; top:0; background:transparent; z-index:9997; padding-top:10px; padding-bottom:10px; }
+}
 
   </style>
 
@@ -814,6 +870,64 @@ document.getElementById('openTrash').onclick = openTrash;
 load();
 // default view
 switchView('dashboard');
+// MOBILE SIDEBAR: toggle + backdrop + auto-close on nav click
+(function(){
+  const menuBtn = document.getElementById('menuBtn');
+  const sidebar = document.querySelector('.sidebar');
+  if(!menuBtn || !sidebar) return;
+
+  // create backdrop element if not exists
+  let backdrop = document.querySelector('.sidebar-backdrop');
+  if(!backdrop){
+    backdrop = document.createElement('div');
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    document.querySelector('.main').classList.add('shifted');
+    backdrop.classList.add('show');
+    // prevent page scrolling underneath
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    document.querySelector('.main').classList.remove('shifted');
+    backdrop.classList.remove('show');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', (e) => {
+    if(sidebar.classList.contains('open')) closeSidebar(); else openSidebar();
+  });
+
+  // close when clicking backdrop
+  backdrop.addEventListener('click', closeSidebar);
+
+  // close when clicking a nav button inside the sidebar (good for single-page nav)
+  sidebar.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-view]');
+    if(btn) {
+      // allow switchView to run, then close
+      setTimeout(closeSidebar, 150);
+    }
+  });
+
+  // close on Escape key
+  document.addEventListener('keydown', (ev) => {
+    if(ev.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar();
+  });
+
+  // optional: close sidebar on small window resize to avoid stuck open state
+  window.addEventListener('resize', () => {
+    if(window.innerWidth > 980 && sidebar.classList.contains('open')) {
+      closeSidebar();
+    }
+  });
+})();
 
 /* ============================
    UI: Firebase button handlers
